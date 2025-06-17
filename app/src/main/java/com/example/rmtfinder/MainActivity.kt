@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -60,16 +62,43 @@ class MainActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         binding.searchButton.setOnClickListener {
-            val keyword = binding.searchInput.text.toString()
-            viewModel.search(keyword)
+            val keyword = binding.searchInput.text.toString().trim()
+            if (keyword.isNotEmpty()) {
+                Log.d("MainActivity", "Search button clicked with keyword: $keyword")
+                viewModel.search(keyword)
+            } else {
+                Toast.makeText(this, "Please enter a search term", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.nearMeButton.setOnClickListener {
             fetchLocationAndSearch()
         }
 
-        viewModel.results.observe(this) {
-            adapter.submitList(it)
+        // Observe results
+        viewModel.results.observe(this) { results ->
+            Log.d("MainActivity", "Results updated: ${results.size} items")
+            adapter.submitList(results)
+        }
+
+        // Observe loading state
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.searchButton.isEnabled = !isLoading
+            binding.nearMeButton.isEnabled = !isLoading
+            if (isLoading) {
+                binding.searchButton.text = "Searching..."
+            } else {
+                binding.searchButton.text = getString(R.string.search_button)
+            }
+        }
+
+        // Observe error state
+        viewModel.error.observe(this) { error ->
+            error?.let {
+                Log.e("MainActivity", "Error: $it")
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                viewModel.clearError()
+            }
         }
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
