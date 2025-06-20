@@ -1,27 +1,203 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="16dp"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-<LinearLayout
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
 
-    <TextView android:id="@+id/name_text" android:textSize="20sp" android:textStyle="bold"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-    <TextView android:id="@+id/status_text" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    <TextView android:id="@+id/language_text" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    <TextView android:id="@+id/practice_text" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    <TextView android:id="@+id/phone_text" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-<Button
-        android:id="@+id/mapButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="View on Map"/>
-</LinearLayout>
-</ScrollView>
+    <ScrollView
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:divider="@android:color/transparent"
+            android:showDividers="middle">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- Personal Info Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/personal_info_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp">
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView android:id="@+id/name_text" android:textSize="22sp" android:textStyle="bold"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                        <TextView android:id="@+id/status_text" android:textSize="16sp"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                        <TextView android:id="@+id/registration_number_text" android:textSize="14sp"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                        <TextView android:id="@+id/gender_text" android:textSize="14sp"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <ImageButton
+                    android:id="@+id/bookmark_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="@string/bookmark_rmt"
+                    android:src="@drawable/ic_star_outline"/>
+            </RelativeLayout>
+
+            <!-- Practice Locations Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Practice Locations" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <LinearLayout
+                        android:id="@+id/practice_locations_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Languages Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Languages of Care" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/language_chip_group"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleLine="false"
+                        app:singleSelection="false"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Registration History Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Registration History" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <LinearLayout
+                        android:id="@+id/registration_history_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Education Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Education" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <LinearLayout
+                        android:id="@+id/education_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Other Registrations Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Other Registrations" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <LinearLayout
+                        android:id="@+id/other_registrations_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Notices Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:text="Public Notices" android:textStyle="bold" android:textSize="18sp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary"/>
+                    <LinearLayout
+                        android:id="@+id/public_notices_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Map Button -->
+            <Button
+                android:id="@+id/mapButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="View on Map"
+                android:layout_gravity="center_horizontal"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Overlay loading indicator -->
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone">
+        <ProgressBar
+            android:id="@+id/progress_circular"
+            style="@android:style/Widget.Material.ProgressBar.Large"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </FrameLayout>
+
+</FrameLayout>
