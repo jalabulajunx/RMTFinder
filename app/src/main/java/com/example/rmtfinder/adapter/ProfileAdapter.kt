@@ -10,6 +10,15 @@ import com.example.rmtfinder.R
 import com.example.rmtfinder.model.ResultItem
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import android.util.Log
+import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class ProfileAdapter(
     private val onClick: (ResultItem) -> Unit
@@ -36,10 +45,14 @@ class ProfileAdapter(
     inner class ProfileViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val name = itemView.findViewById<TextView>(R.id.name_text)
         private val location = itemView.findViewById<TextView>(R.id.location_text)
+        private val bookmarkBtn = itemView.findViewById<ImageButton>(R.id.bookmark_button)
+        private val bookmarkRepo = BookmarkRepository(itemView.context)
+        private var bookmarkJob: Job? = null
+        private val viewHolderScope = CoroutineScope(Dispatchers.Main)
 
         fun bind(item: ResultItem) {
-            name.text = "${item.firstName} ${item.lastName}"
-            location.text = item.practiceLocation ?: "No location"
+            name.text = listOfNotNull(item.firstName, item.lastName).joinToString(" ").ifBlank { "Unknown RMT" }
+            location.text = item.practiceLocation?.takeIf { it.isNotBlank() } ?: "No location"
 
             // Status chips
             val chipGroup = itemView.findViewById<ChipGroup>(R.id.status_chip_group)
@@ -67,18 +80,38 @@ class ProfileAdapter(
                 chipGroup.addView(alertChip)
             }
 
-            // Bookmark icon
-            val bookmarkBtn = itemView.findViewById<ImageButton>(R.id.bookmark_button)
-            val isBookmarked = BookmarkManager.isBookmarked(itemView.context, item.profileId)
-            bookmarkBtn.setImageResource(
-                if (isBookmarked) R.drawable.ic_star_filled else R.drawable.ic_star_outline
-            )
-            bookmarkBtn.setOnClickListener {
-                BookmarkManager.toggleBookmark(itemView.context, item.profileId)
-                notifyItemChanged(adapterPosition)
+            // Cancel previous Flow collection
+            bookmarkJob?.cancel()
+            // Observe bookmark state
+            bookmarkJob = viewHolderScope.launch {
+                bookmarkRepo.isBookmarked(item.profileId).collectLatest { isBookmarked ->
+                    bookmarkBtn.setImageResource(
+                        if (isBookmarked) R.drawable.ic_star_filled else R.drawable.ic_star_outline
+                    )
+                }
             }
-
+            // Toggle bookmark on click
+            bookmarkBtn.setOnClickListener {
+                viewHolderScope.launch {
+                    try {
+                        val isBookmarked = bookmarkRepo.isBookmarked(item.profileId)
+                            .first()
+                        if (isBookmarked) {
+                            bookmarkRepo.removeBookmark(item.profileId)
+                        } else {
+                            bookmarkRepo.addBookmark(item.profileId)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ProfileAdapter", "Bookmark toggle failed", e)
+                        Toast.makeText(itemView.context, "Bookmark error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
             itemView.setOnClickListener { onClick(item) }
+        }
+        fun onViewRecycled() {
+            bookmarkJob?.cancel()
+            viewHolderScope.cancel()
         }
     }
 }

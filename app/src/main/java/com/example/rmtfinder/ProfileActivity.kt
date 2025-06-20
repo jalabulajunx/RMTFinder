@@ -21,7 +21,11 @@ import android.net.Uri
 import androidx.core.content.ContextCompat
 import com.google.android.material.color.MaterialColors
 import android.widget.ImageButton
-import com.example.rmtfinder.adapter.BookmarkManager
+import com.example.rmtfinder.adapter.BookmarkRepository
+import android.util.Log
+import android.widget.Toast
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
@@ -184,20 +188,35 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         val bookmarkBtn = findViewById<ImageButton>(R.id.bookmark_button)
+        val bookmarkRepo = BookmarkRepository(this)
+        var bookmarkJob: Job? = null
 
-        fun updateBookmarkIcon() {
-            if (profileId != null) {
-                val isBookmarked = BookmarkManager.isBookmarked(this, profileId!!)
-                bookmarkBtn.setImageResource(
-                    if (isBookmarked) R.drawable.ic_star_filled else R.drawable.ic_star_outline
-                )
+        profileId?.let { id ->
+            bookmarkJob?.cancel()
+            bookmarkJob = lifecycleScope.launch {
+                bookmarkRepo.isBookmarked(id).collect { isBookmarked ->
+                    bookmarkBtn.setImageResource(
+                        if (isBookmarked) R.drawable.ic_star_filled else R.drawable.ic_star_outline
+                    )
+                }
             }
         }
-        updateBookmarkIcon()
+
         bookmarkBtn.setOnClickListener {
-            profileId?.let {
-                BookmarkManager.toggleBookmark(this, it)
-                updateBookmarkIcon()
+            profileId?.let { id ->
+                lifecycleScope.launch {
+                    try {
+                        val isBookmarked = bookmarkRepo.isBookmarked(id).first()
+                        if (isBookmarked) {
+                            bookmarkRepo.removeBookmark(id)
+                        } else {
+                            bookmarkRepo.addBookmark(id)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ProfileActivity", "Bookmark toggle failed", e)
+                        Toast.makeText(this@ProfileActivity, "Bookmark error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
     }

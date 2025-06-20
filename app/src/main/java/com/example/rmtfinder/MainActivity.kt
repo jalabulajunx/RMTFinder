@@ -24,6 +24,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.core.view.WindowCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -37,6 +42,32 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Edge-to-edge fullscreen
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = systemInsets.top, bottom = systemInsets.bottom)
+            insets
+        }
+
+        // Hide the ActionBar for fullscreen
+        supportActionBar?.hide()
+
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+        bottomNav.selectedItemId = R.id.nav_search
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_search -> true
+                R.id.nav_bookmarks -> {
+                    startActivity(Intent(this, BookmarkedActivity::class.java))
+                    true
+                }
+                else -> false
+            }
+        }
 
         adapter = ProfileAdapter {
             val intent = Intent(this, ProfileActivity::class.java)
