@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RMT Finder</string>
+    <string name="search_hint">Search for RMTs...</string>
+    <string name="search_button">Search</string>
+    <string name="near_me_button">Near Me</string>
+    <string name="location_permission_denied">Location permission denied</string>
+    <string name="unable_to_detect_city">Unable to detect city</string>
+    <string name="location_unavailable">Location unavailable</string>
+    <string name="bookmark_rmt">Bookmark RMT</string>
+</resources> 
