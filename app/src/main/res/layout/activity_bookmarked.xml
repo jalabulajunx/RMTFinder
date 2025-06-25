@@ -1,11 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_layout"
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/windowBackground">
+
+    <!-- Loading indicator with better contrast -->
+    <FrameLayout
+        android:id="@+id/loading_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:padding="32dp"
+        android:visibility="gone">
+        
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@android:style/Widget.Material.ProgressBar.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:indeterminateTint="?attr/colorPrimary"/>
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="60dp"
+            android:text="Loading bookmarked RMTs..."
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"/>
+    </FrameLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
@@ -34,4 +63,4 @@
         app:menu="@menu/bottom_nav_menu"
         app:labelVisibilityMode="unlabeled"
         app:itemIconTint="@color/black"/>
-</LinearLayout> 
+</LinearLayout>

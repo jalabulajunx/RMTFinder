@@ -14,10 +14,13 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}"/>
-        <activity 
+        <activity
             android:name=".ProfileActivity"
             android:exported="false"/>
-        <activity 
+        <activity
+            android:name=".BookmarkedActivity"
+            android:exported="false"/>
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -25,7 +28,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity 
+        <activity
             android:name=".MapActivity"
             android:exported="false"/>
     </application>

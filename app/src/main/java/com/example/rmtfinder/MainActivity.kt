@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -38,6 +37,9 @@ class MainActivity : AppCompatActivity() {
 
     private val LOCATION_PERMISSION_CODE = 1001
 
+    // State preservation variables
+    private var isReturningFromBookmarks = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_search -> true
                 R.id.nav_bookmarks -> {
+                    isReturningFromBookmarks = true // Mark that we're going to bookmarks
                     startActivity(Intent(this, BookmarkedActivity::class.java))
                     true
                 }
@@ -137,6 +140,20 @@ class MainActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        // Only reset bottom navigation when returning from bookmarks
+        if (isReturningFromBookmarks) {
+            val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+            bottomNav.selectedItemId = R.id.nav_search
+            isReturningFromBookmarks = false // Reset the flag
+        }
+
+        // Don't clear search results - they are preserved in the ViewModel
+        Log.d("MainActivity", "onResume called - preserving existing search results")
+    }
+
     private fun fetchLocationAndSearch() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
@@ -187,6 +204,7 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_bookmarks -> {
+                isReturningFromBookmarks = true
                 startActivity(Intent(this, BookmarkedActivity::class.java))
                 true
             }
