@@ -393,7 +393,8 @@ class JaneAppExtractor {
               rmtInfo = {
                 id: rmtData.id,
                 full_name: rmtData.full_name,
-                shifts: rmtData.shifts
+                shifts: rmtData.shifts,
+                first_date: rmtData.first_date // Preserve first_date information
               };
               console.log(`     💾 Stored RMT info for ${rmtData.full_name}`);
             }
@@ -443,10 +444,24 @@ class JaneAppExtractor {
         console.log(`   ✅ Formatted into ${formattedAvailability.length} date groups`);
         
         return formattedAvailability;
+      } else if (rmtInfo && rmtInfo.first_date) {
+        // No openings in selected range, but we have first_date information
+        console.log(`   📅 No openings in selected range, but first_date available: ${rmtInfo.first_date}`);
+        
+        const combinedData = {
+          ...rmtInfo,
+          openings: [] // Empty openings array, but formatRealAvailability will use first_date
+        };
+        
+        const formattedAvailability = this.formatRealAvailability(combinedData, startDate, endDate);
+        console.log(`   ✅ Formatted first_date into ${formattedAvailability.length} date groups`);
+        
+        return formattedAvailability;
       } else {
         console.log(`   ❌ No availability data to return:`);
         console.log(`      - Openings: ${allOpenings.length}`);
         console.log(`      - RMT Info: ${rmtInfo ? 'Available' : 'Missing'}`);
+        console.log(`      - First Date: ${rmtInfo?.first_date || 'Not available'}`);
       }
       
       return [];
@@ -498,6 +513,59 @@ class JaneAppExtractor {
         });
       }
     });
+    
+    // If no openings found but we have first_date, add it as the first available date
+    if (Object.keys(openingsByDate).length === 0 && rmtData.first_date) {
+      console.log(`    📅 No openings found, but first_date available: ${rmtData.first_date}`);
+      const firstDate = rmtData.first_date.split('T')[0];
+      
+      // Check if first_date includes time information
+      let firstTime = 'Contact for times';
+      if (rmtData.first_date.includes('T')) {
+        // Has time information, extract it
+        firstTime = this.formatTime(rmtData.first_date);
+        console.log(`    🕐 Extracted time from first_date: ${firstTime}`);
+      } else {
+        // Just a date, no time information available
+        console.log(`    📅 first_date is date-only, no time available`);
+      }
+      
+      // Create date object in UTC to avoid timezone issues
+      const dateObj = new Date(firstDate + 'T12:00:00Z');
+      
+      // Format as "July 29, Tuesday"
+      const monthDay = dateObj.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric',
+        timeZone: 'UTC'
+      });
+      const weekday = dateObj.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        timeZone: 'UTC'
+      });
+      
+      console.log(`    📅 Adding first_date as available slot: ${firstDate} at ${firstTime}`);
+      
+      availability.push({
+        date: firstDate,
+        dayOfWeek: `${monthDay}, ${weekday}`,
+        slots: [{
+          time: firstTime,
+          endTime: null, // We don't have end time from first_date
+          available: true,
+          duration: 60, // Default duration
+          service: 'RMT Session',
+          price: 115, // Default price
+          startAt: rmtData.first_date,
+          endAt: null,
+          status: 'first_available', // Special status to indicate this is from first_date
+          treatmentId: null
+        }],
+        isFirstAvailable: true // Flag to indicate this is from first_date
+      });
+      
+      return availability;
+    }
     
     // Convert to our format
     Object.keys(openingsByDate).forEach(date => {

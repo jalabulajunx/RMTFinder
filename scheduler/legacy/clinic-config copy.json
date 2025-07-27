@@ -1,0 +1,34 @@
+{
+    "clinics": [
+        {
+            "id": "natures-gifts",
+            "name": "Nature's Gifts and Organic Spa",
+            "url": "https://naturesgiftsandorganicspa.janeapp.com",
+            "enabled": true
+        },
+        {
+            "id": "stouffville-family",
+            "name": "Stouffville Family Massage & Wellness",
+            "url": "https://stouffvillefamilymassageandwellness.janeapp.com",
+            "enabled": true
+        },
+        {
+            "id": "topcare-wellness",
+            "name": "Top Care Wellness",
+            "url": "https://topcarewellness.janeapp.com",
+            "enabled": true
+        },
+        {
+            "id": "beaconhill-physio",
+            "name": "Beacon Hill Physio",
+            "url": "https://beaconhillphysio.janeapp.com/",
+            "enabled": true
+        }
+    ],
+    "settings": {
+        "requestTimeout": 10000,
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0",
+        "maxRetries": 3,
+        "retryDelay": 2000
+    }
+}

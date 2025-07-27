@@ -1,23 +1,79 @@
 const express = require('express');
 const cors = require('cors');
-const JaneAppExtractor = require('./api-extractor');
-const AutomatedTreatmentExtractor = require('./automated-extractor');
+const fs = require('fs');
+const path = require('path');
+const JaneAppExtractor = require('./legacy/api-extractor');
+const AutomatedTreatmentExtractor = require('./legacy/automated-extractor');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const extractor = new JaneAppExtractor();
 const automatedExtractor = new AutomatedTreatmentExtractor();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Serve React frontend from dist folder
+app.use(express.static(path.join(__dirname, 'public/dist')));
+
+// Serve legacy static files
+app.use('/legacy', express.static('public'));
 
 // Load clinic configurations from config file
 const CLINICS = automatedExtractor.config.clinics.filter(clinic => clinic.enabled);
 
 // Cache for clinic data
-let clinicDataCache = new Map();const CACHE_DURATION = process.env.CACHE_DURATION || 30 * 60 * 1000; // 30 minutes default
+let clinicDataCache = new Map(); const CACHE_DURATION = process.env.CACHE_DURATION || 30 * 60 * 1000; // 30 minutes default
+
+// Helper functions for server-side sorting
+function getNextAvailablePrice(rmt, startDate, endDate) {
+    const searchStartDate = new Date(startDate);
+    const searchEndDate = new Date(endDate);
+
+    if (rmt.availability && rmt.availability.length > 0) {
+        for (const daySlot of rmt.availability) {
+            const slotDate = new Date(daySlot.date);
+            if (slotDate >= searchStartDate && slotDate <= searchEndDate && daySlot.slots && daySlot.slots.length > 0) {
+                return daySlot.slots[0].price || 115;
+            }
+        }
+    }
+    return null;
+}
+
+function getNextAvailableDate(rmt, startDate, endDate) {
+    const searchStartDate = new Date(startDate);
+    const searchEndDate = new Date(endDate);
+
+    if (rmt.availability && rmt.availability.length > 0) {
+        for (const daySlot of rmt.availability) {
+            const slotDate = new Date(daySlot.date);
+            if (slotDate >= searchStartDate && slotDate <= searchEndDate && daySlot.slots && daySlot.slots.length > 0) {
+                return daySlot.date;
+            }
+        }
+    }
+    return null;
+}
+
+function getRecommendationScore(rmt) {
+    let score = 0;
+
+    // Boost for real availability data
+    if (rmt.dataSource === 'real') score += 50;
+    else if (rmt.dataSource === 'cached') score += 30;
+    else if (rmt.dataSource === 'estimated') score += 20;
+
+    // Boost for having availability
+    if (rmt.availability && rmt.availability.length > 0) score += 30;
+
+    // Boost for more available slots
+    const totalSlots = rmt.availability?.reduce((sum, day) => sum + (day.slots?.length || 0), 0) || 0;
+    score += Math.min(totalSlots * 2, 20);
+
+    return score;
+}
 
 async function getClinicData(clinic) {
     const cacheKey = clinic.id;
@@ -46,6 +102,25 @@ async function getClinicData(clinic) {
 }
 
 // API Routes
+
+// Get organizations for filtering dropdown
+app.get('/api/organizations', (req, res) => {
+    try {
+        // Return the clinic configuration for the frontend dropdown
+        const organizations = {
+            clinics: CLINICS.map(clinic => ({
+                id: clinic.id,
+                name: clinic.name,
+                enabled: clinic.enabled
+            }))
+        };
+        res.json(organizations);
+    } catch (error) {
+        console.error('Error fetching organizations:', error);
+        res.status(500).json({ error: 'Failed to fetch organizations' });
+    }
+});
+
 app.get('/api/clinics', async (req, res) => {
     try {
         const clinicsWithData = [];
@@ -93,11 +168,18 @@ app.get('/api/rmts', async (req, res) => {
 });
 
 app.get('/api/availability', async (req, res) => {
-    const { clinicId, rmtId, startDate, endDate } = req.query;
+    const { clinicId, rmtId, date, num_days } = req.query;
 
-    if (!startDate || !endDate) {
-        return res.status(400).json({ error: 'Start date and end date are required' });
+    if (!date || !num_days) {
+        return res.status(400).json({ error: 'Date and num_days are required' });
     }
+
+    // Calculate end date from start date + num_days
+    const startDate = date;
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + parseInt(num_days) - 1);
+    const endDate = end.toISOString().split('T')[0];
 
     try {
         const clinic = CLINICS.find(c => c.id === clinicId);
@@ -147,39 +229,73 @@ app.get('/api/availability', async (req, res) => {
 });
 
 app.get('/api/availability/all', async (req, res) => {
-    const { startDate, endDate } = req.query;
-
-    if (!startDate || !endDate) {
-        return res.status(400).json({ error: 'Start date and end date are required' });
+    const { date, num_days, clinicIndex = 0, targetRMTs = 10, search, organization, sortBy = 'recommended', sortOrder = 'asc' } = req.query;
+    
+    if (!date || !num_days) {
+        return res.status(400).json({ error: 'Date and num_days are required' });
     }
+    
+    const requestedClinicIndex = parseInt(clinicIndex);
+    
+    // Calculate end date
+    const startDate = date;
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + parseInt(num_days) - 1);
+    const endDate = end.toISOString().split('T')[0];
 
     try {
-        const allAvailability = [];
-
-        for (const clinic of CLINICS) {
+        // Get all enabled clinics, filter by organization if specified
+        let clinics = CLINICS.filter(clinic => clinic.enabled);
+        if (organization) {
+            clinics = clinics.filter(clinic => clinic.id === organization);
+        }
+        
+        // Check if requested clinic index is valid
+        if (requestedClinicIndex >= clinics.length) {
+            return res.json({
+                data: [],
+                pagination: {
+                    nextClinicIndex: null,
+                    hasMoreClinics: false,
+                    totalClinics: clinics.length,
+                    processedClinics: 0,
+                    rmtCount: 0
+                }
+            });
+        }
+        
+        // Get the specific clinic for this request
+        const clinic = clinics[requestedClinicIndex];
+        const allRMTs = [];
+        
+        console.log(`📋 Loading RMTs for clinic ${requestedClinicIndex}: ${clinic.name}`);
+        
+        try {
             const clinicData = await getClinicData(clinic);
-
+            
             if (clinicData && clinicData.rmts) {
+                console.log(`🔍 Found ${clinicData.rmts.length} RMTs in ${clinic.name}`);
+                
+                // Process ALL RMTs from this specific clinic
                 for (const rmt of clinicData.rmts) {
-                    // Try to get real availability first, fallback to mock data
-                    let availability;
-                    let dataSource = 'mock';
-
+                    // Get availability data for each RMT
+                    let availability = [];
+                    let dataSource = 'none';
+                    
                     try {
                         availability = await extractor.getRealAvailability(clinic.url, rmt.id, startDate, endDate);
-                        if (availability.length > 0 && availability[0].slots[0]?.startAt) {
+                        if (availability.length > 0 && availability[0].slots && availability[0].slots.length > 0) {
                             dataSource = 'real';
-                            console.log(`Got real availability for ${rmt.name}: ${availability.length} days`);
+                            console.log(`✅ Got real availability for ${rmt.name}: ${availability.length} days`);
                         } else {
-                            throw new Error('No real data available');
+                            console.log(`⚠️ No availability slots for ${rmt.name}`);
                         }
                     } catch (error) {
-                        console.log(`No availability data for ${rmt.name}:`, error.message);
-                        availability = [];
-                        dataSource = 'none';
+                        console.log(`❌ No availability data for ${rmt.name}:`, error.message);
                     }
 
-                    allAvailability.push({
+                    allRMTs.push({
                         ...rmt,
                         clinic: clinicData.name,
                         clinicId: clinic.id,
@@ -188,13 +304,82 @@ app.get('/api/availability/all', async (req, res) => {
                         dataSource
                     });
                 }
+            } else {
+                console.log(`⚠️ No RMT data found for ${clinic.name}`);
             }
+        } catch (error) {
+            console.error(`❌ Error processing clinic ${clinic.name}:`, error.message);
         }
-
-        res.json(allAvailability);
+        
+        // Apply search filter
+        let filteredResults = allRMTs;
+        if (search) {
+            const searchLower = search.toLowerCase();
+            filteredResults = allRMTs.filter(rmt => 
+                rmt.name?.toLowerCase().includes(searchLower) ||
+                rmt.clinic?.toLowerCase().includes(searchLower) ||
+                rmt.services?.some(service => service.name?.toLowerCase().includes(searchLower))
+            );
+        }
+        
+        // Apply sorting
+        filteredResults.sort((a, b) => {
+            let comparison = 0;
+            switch (sortBy) {
+                case 'name':
+                    comparison = (a.name || '').localeCompare(b.name || '');
+                    break;
+                case 'clinic':
+                    comparison = (a.clinic || '').localeCompare(b.clinic || '');
+                    break;
+                case 'price':
+                    const aPrice = getNextAvailablePrice(a, startDate, endDate);
+                    const bPrice = getNextAvailablePrice(b, startDate, endDate);
+                    if (aPrice === null && bPrice === null) comparison = 0;
+                    else if (aPrice === null) comparison = 1;
+                    else if (bPrice === null) comparison = -1;
+                    else comparison = aPrice - bPrice;
+                    break;
+                case 'next_available':
+                    const aDate = getNextAvailableDate(a, startDate, endDate);
+                    const bDate = getNextAvailableDate(b, startDate, endDate);
+                    if (aDate === null && bDate === null) comparison = 0;
+                    else if (aDate === null) comparison = 1;
+                    else if (bDate === null) comparison = -1;
+                    else comparison = new Date(aDate).getTime() - new Date(bDate).getTime();
+                    break;
+                default:
+                    // Default to recommended (real data first, then by availability)
+                    const aScore = getRecommendationScore(a);
+                    const bScore = getRecommendationScore(b);
+                    comparison = bScore - aScore;
+            }
+            return sortOrder === 'desc' ? -comparison : comparison;
+        });
+        
+        console.log(`📊 Returning ${filteredResults.length} RMTs for clinic ${clinic.name}`);
+        
+        // Response - check if there are more clinics after this one
+        const hasMoreClinics = (requestedClinicIndex + 1) < clinics.length;
+        res.json({
+            data: filteredResults,
+            pagination: {
+                nextClinicIndex: hasMoreClinics ? requestedClinicIndex + 1 : null,
+                hasMoreClinics,
+                totalClinics: clinics.length,
+                processedClinics: 1,
+                rmtCount: filteredResults.length,
+                currentClinic: {
+                    index: requestedClinicIndex,
+                    name: clinic.name,
+                    id: clinic.id
+                }
+            }
+        });
+        
     } catch (error) {
-        console.error('Error fetching all availability:', error);
-        res.status(500).json({ error: 'Failed to fetch all availability' });
+        console.error('Error fetching availability:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
     }
 });
 
@@ -202,13 +387,13 @@ app.get('/api/availability/all', async (req, res) => {
 app.get('/api/treatments', async (req, res) => {
     try {
         console.log('🚀 Starting automated treatment extraction...');
-        
+
         // Process all clinics using automated extractor
         const results = await automatedExtractor.processAllClinics();
-        
+
         // Transform results for API response
         const allTreatments = {};
-        
+
         Object.entries(results).forEach(([clinicId, clinicData]) => {
             allTreatments[clinicData.name] = {
                 clinicId: clinicId,
@@ -218,7 +403,7 @@ app.get('/api/treatments', async (req, res) => {
                 treatmentCount: clinicData.treatmentCount,
                 allTreatmentIds: clinicData.extractedData.treatments.map(t => t.id),
                 treatmentDetails: clinicData.extractedData.treatments,
-                rmtTreatments: clinicData.extractedData.treatments.filter(t => 
+                rmtTreatments: clinicData.extractedData.treatments.filter(t =>
                     t.name && (
                         t.name.toLowerCase().includes('rmt') ||
                         t.name.toLowerCase().includes('massage') ||
@@ -251,7 +436,7 @@ app.get('/api/treatments/:clinicId', async (req, res) => {
     try {
         const clinicId = req.params.clinicId;
         const clinic = CLINICS.find(c => c.id === clinicId);
-        
+
         if (!clinic) {
             return res.status(404).json({ error: 'Clinic not found' });
         }
@@ -259,7 +444,7 @@ app.get('/api/treatments/:clinicId', async (req, res) => {
         console.log(`🔍 Extracting treatments for: ${clinic.name}`);
         const extractedData = await automatedExtractor.extractTreatmentsFromUrl(clinic.url);
 
-        const rmtTreatments = extractedData.treatments.filter(t => 
+        const rmtTreatments = extractedData.treatments.filter(t =>
             t.name && (
                 t.name.toLowerCase().includes('rmt') ||
                 t.name.toLowerCase().includes('massage') ||
@@ -296,7 +481,7 @@ app.get('/api/treatments/:clinicId', async (req, res) => {
 app.post('/api/clinics', async (req, res) => {
     try {
         const { name, url, id } = req.body;
-        
+
         if (!name || !url) {
             return res.status(400).json({ error: 'Name and URL are required' });
         }
@@ -315,9 +500,9 @@ app.post('/api/clinics', async (req, res) => {
         // Test extraction first
         console.log(`🧪 Testing extraction for new clinic: ${name}`);
         const testResult = await automatedExtractor.extractTreatmentsFromUrl(url);
-        
+
         if (testResult.error) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Failed to extract treatments from this URL',
                 details: testResult.error
             });
@@ -340,13 +525,13 @@ app.post('/api/clinics', async (req, res) => {
         try {
             const configPath = './clinic-config.json';
             const currentConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            
+
             // Add new clinic to config
             currentConfig.clinics.push(newClinic);
-            
+
             // Write back to file with pretty formatting
             fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2));
-            
+
             console.log(`💾 Clinic "${name}" saved to ${configPath}`);
         } catch (saveError) {
             console.error('❌ Failed to save clinic to config file:', saveError.message);
@@ -367,7 +552,7 @@ app.post('/api/clinics', async (req, res) => {
                 sampleTreatments: testResult.treatments.slice(0, 5).map(t => ({
                     id: t.id,
                     name: t.name,
-                    duration: t.treatment_duration ? Math.round(t.treatment_duration/60) + 'min' : 'N/A'
+                    duration: t.treatment_duration ? Math.round(t.treatment_duration / 60) + 'min' : 'N/A'
                 }))
             }
         });
@@ -400,7 +585,13 @@ app.get('/api/clinic/:id', async (req, res) => {
     }
 });
 
+// Catch all handler: send back React's index.html file for client-side routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/dist/index.html'));
+});
+
 app.listen(PORT, () => {
     console.log(`RMT Availability Checker running on port ${PORT}`);
-    console.log(`Visit http://localhost:${PORT} to view the app`);
+    console.log(`Visit http://localhost:${PORT} to view the modern React app`);
+    console.log(`Visit http://localhost:${PORT}/legacy to view the legacy app`);
 });
