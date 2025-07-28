@@ -3,6 +3,12 @@
 RMT Finder is a simple Android application to search for **Registered Massage Therapists (RMTs)** using the public CMTO API. This project is built using **Material Design**, **MVVM architecture**, and modern Android development practices.
 
 ---
+## Demo
+[Kiro's magic](https://github.com/jalabulajunx/RMTFinder/blob/b36d3ec4a0f8fcfd92136565d5d5c29570b9ff3b/Kiro%20in%20action.gif)
+
+[Prototype](https://github.com/jalabulajunx/RMTFinder/blob/b36d3ec4a0f8fcfd92136565d5d5c29570b9ff3b/RMT%20Finder%20in%20Action.gif)
+
+---
 
 ## 🚀 Features
 
