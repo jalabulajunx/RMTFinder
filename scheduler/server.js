@@ -20,8 +20,42 @@ app.use(express.static(path.join(__dirname, 'public/dist')));
 // Serve legacy static files
 app.use('/legacy', express.static('public'));
 
-// Load clinic configurations from config file
-const CLINICS = automatedExtractor.config.clinics.filter(clinic => clinic.enabled);
+// Load clinic configurations from config file with city-based support
+function loadClinicsFromConfig() {
+    const config = automatedExtractor.config;
+    
+    // Detect configuration format
+    if (config.cities && typeof config.cities === 'object') {
+        // New city-based format
+        const allClinics = [];
+        Object.values(config.cities).forEach(city => {
+            if (city.enabled && city.clinics) {
+                city.clinics.forEach(clinic => {
+                    if (clinic.enabled) {
+                        allClinics.push({
+                            ...clinic,
+                            cityId: city.id,
+                            cityName: city.name
+                        });
+                    }
+                });
+            }
+        });
+        return allClinics;
+    } else if (config.clinics && Array.isArray(config.clinics)) {
+        // Legacy flat format - maintain backward compatibility
+        return config.clinics.filter(clinic => clinic.enabled).map(clinic => ({
+            ...clinic,
+            cityId: 'stouffville', // Default city for legacy clinics
+            cityName: 'Stouffville'
+        }));
+    } else {
+        console.error('Unknown configuration format');
+        return [];
+    }
+}
+
+const CLINICS = loadClinicsFromConfig();
 
 // Cache for clinic data
 let clinicDataCache = new Map(); const CACHE_DURATION = process.env.CACHE_DURATION || 30 * 60 * 1000; // 30 minutes default
@@ -229,7 +263,7 @@ app.get('/api/availability', async (req, res) => {
 });
 
 app.get('/api/availability/all', async (req, res) => {
-    const { date, num_days, clinicIndex = 0, targetRMTs = 10, search, organization, sortBy = 'recommended', sortOrder = 'asc' } = req.query;
+    const { date, num_days, clinicIndex = 0, targetRMTs = 10, search, organization, city, sortBy = 'recommended', sortOrder = 'asc' } = req.query;
     
     if (!date || !num_days) {
         return res.status(400).json({ error: 'Date and num_days are required' });
@@ -245,10 +279,13 @@ app.get('/api/availability/all', async (req, res) => {
     const endDate = end.toISOString().split('T')[0];
 
     try {
-        // Get all enabled clinics, filter by organization if specified
+        // Get all enabled clinics, filter by organization and/or city if specified
         let clinics = CLINICS.filter(clinic => clinic.enabled);
         if (organization) {
             clinics = clinics.filter(clinic => clinic.id === organization);
+        }
+        if (city) {
+            clinics = clinics.filter(clinic => clinic.cityId === city);
         }
         
         // Check if requested clinic index is valid
@@ -582,6 +619,68 @@ app.get('/api/clinic/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching clinic details:', error);
         res.status(500).json({ error: 'Failed to fetch clinic details' });
+    }
+});
+
+// Get city configuration
+app.get('/api/cities/config', (req, res) => {
+    try {
+        res.json(automatedExtractor.config);
+    } catch (error) {
+        console.error('Error fetching city configuration:', error);
+        res.status(500).json({ error: 'Failed to fetch city configuration' });
+    }
+});
+
+// Get all cities
+app.get('/api/cities', (req, res) => {
+    try {
+        const config = automatedExtractor.config;
+        
+        if (config.cities && typeof config.cities === 'object') {
+            const cities = Object.values(config.cities)
+                .filter(city => city.enabled)
+                .map(city => ({
+                    id: city.id,
+                    name: city.name,
+                    displayName: city.displayName,
+                    enabled: city.enabled,
+                    clinicCount: city.clinics ? city.clinics.filter(c => c.enabled).length : 0
+                }));
+            res.json(cities);
+        } else {
+            // Legacy format - return default Stouffville city
+            res.json([{
+                id: 'stouffville',
+                name: 'Stouffville',
+                displayName: 'Stouffville',
+                enabled: true,
+                clinicCount: CLINICS.length
+            }]);
+        }
+    } catch (error) {
+        console.error('Error fetching cities:', error);
+        res.status(500).json({ error: 'Failed to fetch cities' });
+    }
+});
+
+// Get clinics for a specific city
+app.get('/api/cities/:cityId/clinics', (req, res) => {
+    try {
+        const { cityId } = req.params;
+        const cityClinics = CLINICS.filter(clinic => clinic.cityId === cityId);
+        
+        res.json(cityClinics.map(clinic => ({
+            id: clinic.id,
+            name: clinic.name,
+            url: clinic.url,
+            enabled: clinic.enabled,
+            cityId: clinic.cityId,
+            cityName: clinic.cityName
+        })));
+    } catch (error) {
+        console.error('Error fetching city clinics:', error);
+        res.status(500).json({ error: 'Failed to fetch city clinics' });
     }
 });
 

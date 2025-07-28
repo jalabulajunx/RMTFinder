@@ -1,70 +1,87 @@
 {
-    "clinics": [
-        {
-            "id": "natures-gifts",
-            "name": "Nature's Gifts and Organic Spa",
-            "url": "https://naturesgiftsandorganicspa.janeapp.com",
-            "enabled": true
-        },
-        {
-            "id": "stouffville-family",
-            "name": "Stouffville Family Massage & Wellness",
-            "url": "https://stouffvillefamilymassageandwellness.janeapp.com",
-            "enabled": true
-        },
-        {
-            "id": "topcare-wellness",
-            "name": "Top Care Wellness",
-            "url": "https://topcarewellness.janeapp.com",
-            "enabled": true
-        },
-        {
-            "id": "beaconhill-physio",
-            "name": "Beacon Hill Physio",
-            "url": "https://beaconhillphysio.janeapp.com/",
-            "enabled": true
-        },
-        {
-            "id": "stouffvillejointventure-physio",
-            "name": "Stouffville Joint Venture",
-            "url": "https://stouffvillejointventure.janeapp.com/",
-            "enabled": true
-        },
-        {
-            "id": "functionalst-therapy",
-            "name": "Functional Strength & Therapy",
-            "url": "https://functionalst.janeapp.com/",
-            "enabled": true
-        },
-        {
-            "id": "renew-integrativehealth",
-            "name": "Renew Integrative Health",
-            "url": "https://renewintegrativehealth.janeapp.com//",
-            "enabled": true
-        },
-        {
-            "id": "souljourney-reconnection",
-            "name": "Soul Journey Reconnection",
-            "url": "https://souljourneyreconnection.janeapp.com/",
-            "enabled": true
-        },
-        {
-            "id": "springview-wellness",
-            "name": "Springview Wellness",
-            "url": "https://springview.janeapp.com/",
-            "enabled": true
-        },
-        {
-            "id": "RehabGrid-Stouffville",
-            "name": "Rehab Grid Physiotherapy and Sports Performance",
-            "url": "https://rehab-grid-physiotherapy-and-sports-performance.janeapp.com/",
-            "enabled": true
+    "cities": {
+        "stouffville": {
+            "id": "stouffville",
+            "name": "Stouffville",
+            "displayName": "Stouffville",
+            "enabled": true,
+            "coordinates": [
+                43.9706,
+                -79.2441
+            ],
+            "clinics": [
+                {
+                    "id": "natures-gifts",
+                    "name": "Nature's Gifts and Organic Spa",
+                    "url": "https://naturesgiftsandorganicspa.janeapp.com",
+                    "enabled": true
+                },
+                {
+                    "id": "stouffville-family",
+                    "name": "Stouffville Family Massage & Wellness",
+                    "url": "https://stouffvillefamilymassageandwellness.janeapp.com",
+                    "enabled": true
+                },
+                {
+                    "id": "topcare-wellness",
+                    "name": "Top Care Wellness",
+                    "url": "https://topcarewellness.janeapp.com",
+                    "enabled": true
+                },
+                {
+                    "id": "beaconhill-physio",
+                    "name": "Beacon Hill Physio",
+                    "url": "https://beaconhillphysio.janeapp.com/",
+                    "enabled": true
+                },
+                {
+                    "id": "stouffvillejointventure-physio",
+                    "name": "Stouffville Joint Venture",
+                    "url": "https://stouffvillejointventure.janeapp.com/",
+                    "enabled": true
+                },
+                {
+                    "id": "functionalst-therapy",
+                    "name": "Functional Strength & Therapy",
+                    "url": "https://functionalst.janeapp.com/",
+                    "enabled": true
+                },
+                {
+                    "id": "renew-integrativehealth",
+                    "name": "Renew Integrative Health",
+                    "url": "https://renewintegrativehealth.janeapp.com//",
+                    "enabled": true
+                },
+                {
+                    "id": "souljourney-reconnection",
+                    "name": "Soul Journey Reconnection",
+                    "url": "https://souljourneyreconnection.janeapp.com/",
+                    "enabled": true
+                },
+                {
+                    "id": "springview-wellness",
+                    "name": "Springview Wellness",
+                    "url": "https://springview.janeapp.com/",
+                    "enabled": true
+                },
+                {
+                    "id": "RehabGrid-Stouffville",
+                    "name": "Rehab Grid Physiotherapy and Sports Performance",
+                    "url": "https://rehab-grid-physiotherapy-and-sports-performance.janeapp.com/",
+                    "enabled": true
+                }
+            ]
         }
-    ],
+    },
     "settings": {
         "requestTimeout": 10000,
         "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0",
         "maxRetries": 3,
         "retryDelay": 2000
+    },
+    "metadata": {
+        "version": "2.0",
+        "lastUpdated": "2025-01-27T00:00:00.000Z",
+        "migrationSource": "flat"
     }
 }

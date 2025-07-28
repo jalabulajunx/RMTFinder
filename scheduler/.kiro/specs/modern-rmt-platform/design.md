@@ -651,6 +651,107 @@ interface OrganizationStats {
 }
 ```
 
+### City-Based Clinic Organization Design
+
+**City Configuration Data Model**
+```typescript
+interface CityBasedConfiguration {
+  cities: Record<string, CityConfiguration>;
+  settings: ConfigurationSettings;
+  metadata?: {
+    version: string;
+    lastUpdated: Date;
+    migrationSource?: 'flat' | 'manual';
+  };
+}
+
+interface CityConfiguration {
+  id: string;
+  name: string;
+  displayName: string;
+  enabled: boolean;
+  coordinates?: [number, number];
+  clinics: ClinicConfiguration[];
+}
+
+interface ClinicConfiguration {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  address?: string;
+  phone?: string;
+  specialties?: string[];
+}
+```
+
+**City Management Service**
+```typescript
+interface CityService {
+  // City data operations
+  getAllCities(): Promise<CityConfiguration[]>;
+  getCityById(cityId: string): Promise<CityConfiguration>;
+  getEnabledCities(): Promise<CityConfiguration[]>;
+  getCityWithClinics(cityId: string): Promise<CityWithClinics>;
+  
+  // City-aware clinic operations
+  getClinicsByCity(cityId: string): Promise<ClinicConfiguration[]>;
+  filterClinicsByCity(clinics: ClinicConfiguration[], cityId: string): ClinicConfiguration[];
+  
+  // Configuration migration
+  migrateFromFlatConfiguration(flatConfig: any): CityBasedConfiguration;
+  detectConfigurationFormat(config: any): 'flat' | 'city-based';
+}
+
+interface CityWithClinics {
+  id: string;
+  name: string;
+  displayName: string;
+  enabled: boolean;
+  clinics: ClinicConfiguration[];
+  clinicCount: number;
+}
+```
+
+**City Selector Component**
+```typescript
+interface CitySelector {
+  cities: CityOption[];
+  selectedCity: string | null;
+  isLoading: boolean;
+  
+  // Event handlers
+  onCityChange: (cityId: string | null) => void;
+  
+  // Configuration
+  showAllCitiesOption: boolean;
+}
+
+interface CityOption {
+  id: string;
+  name: string;
+  displayName: string;
+  clinicCount: number;
+  enabled: boolean;
+}
+```
+
+**Enhanced Sidebar with City Grouping**
+```typescript
+interface CityGroupedSidebar {
+  cities: CityWithClinics[];
+  selectedCity: string | null;
+  activeClinicIndex: number;
+  sidebarOpen: boolean;
+  expandedCities: Set<string>;
+  
+  // Event handlers
+  onCityToggle: (cityId: string) => void;
+  onClinicSelect: (clinicId: string, index: number) => void;
+  onSidebarToggle: () => void;
+}
+```
+
 **Enhanced Sorting Implementation**
 ```typescript
 interface SortingService {

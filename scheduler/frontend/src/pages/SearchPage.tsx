@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MagnifyingGlassIcon, MapPinIcon, CalendarIcon, FunnelIcon, ChevronLeftIcon, ChevronRightIcon, BuildingOffice2Icon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, CalendarIcon, FunnelIcon, BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import Button from '../components/UI/Button'
 import Input from '../components/UI/Input'
 import Card from '../components/UI/Card'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
 import Badge from '../components/UI/Badge'
+import CitySelector from '../components/UI/CitySelector'
+import CityGroupedSidebar from '../components/UI/CityGroupedSidebar'
 import { AvailabilityData } from '../types'
 
 const MOBILE_BREAKPOINT = 768
@@ -24,7 +26,7 @@ const SearchPage: React.FC = () => {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [location, setLocation] = useState('')
+  const [selectedCity, setSelectedCity] = useState<string | null>(null)
   const [expandedRMTs, setExpandedRMTs] = useState<Set<string>>(new Set())
   const [filters] = useState({
     cmtoVerified: true,
@@ -94,7 +96,8 @@ const SearchPage: React.FC = () => {
         date: startDate,
         num_days: numDays.toString(),
         ...(searchQuery && { search: searchQuery }),
-        ...(filters.selectedOrganization && { organization: filters.selectedOrganization })
+        ...(filters.selectedOrganization && { organization: filters.selectedOrganization }),
+        ...(selectedCity && { city: selectedCity })
       })
       
       const response = await fetch(`/api/availability/all?${params}`)
@@ -124,7 +127,7 @@ const SearchPage: React.FC = () => {
       })
       setIsLoadingMore(false)
     }
-  }, [clinics, loadedClinicIndexes, startDate, searchQuery, filters.selectedOrganization])
+  }, [clinics, loadedClinicIndexes, startDate, searchQuery, filters.selectedOrganization, selectedCity])
 
   // Initial load: first clinic
   useEffect(() => {
@@ -288,36 +291,14 @@ const SearchPage: React.FC = () => {
   // Render
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar (hidden on mobile) */}
-      <aside className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-200 ${sidebarOpen ? 'w-64' : 'w-12'} h-screen sticky top-0 z-10`}> 
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <span className={`font-bold text-lg text-primary-700 transition-all duration-200 ${sidebarOpen ? 'block' : 'hidden'}`}>Clinics</span>
-          <button
-            className="ml-auto p-1 rounded hover:bg-gray-100"
-            onClick={() => setSidebarOpen(open => !open)}
-            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {sidebarOpen ? <ChevronLeftIcon className="h-5 w-5" /> : <ChevronRightIcon className="h-5 w-5" />}
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto">
-          <ul className="space-y-1 mt-2">
-            {clinics.map((clinic, idx) => (
-              <li key={clinic.id}>
-                <button
-                  className={`flex items-center w-full px-3 py-2 rounded transition-colors duration-150 text-left ${activeClinicIndex === idx ? 'bg-primary-100 text-primary-700 font-semibold' : 'hover:bg-gray-100 text-gray-700'}`}
-                  onClick={() => handleSidebarClinicClick(clinic.id, idx)}
-                  aria-current={activeClinicIndex === idx ? 'page' : undefined}
-                >
-                  <BuildingOffice2Icon className="h-4 w-4 mr-2 text-primary-400" />
-                  <span className={`${sidebarOpen ? 'block' : 'hidden'}`}>{clinic.name}</span>
-                  {!sidebarOpen && <span className="sr-only">{clinic.name}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
+      {/* City-Grouped Sidebar */}
+      <CityGroupedSidebar
+        sidebarOpen={sidebarOpen}
+        onSidebarToggle={() => setSidebarOpen(open => !open)}
+        selectedCity={selectedCity}
+        activeClinicIndex={activeClinicIndex}
+        onClinicSelect={handleSidebarClinicClick}
+      />
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
@@ -332,12 +313,10 @@ const SearchPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftIcon={<MagnifyingGlassIcon />}
               />
-              <Input
-                label="Location"
-                placeholder="City or postal code"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                leftIcon={<MapPinIcon />}
+              <CitySelector
+                selectedCity={selectedCity}
+                onCityChange={setSelectedCity}
+                showAllCitiesOption={true}
               />
               <Input
                 label="Start Date"
@@ -358,7 +337,7 @@ const SearchPage: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={() => {
-                  console.log('🔍 Search button clicked - resetting and reloading')
+                  console.log('🔍 Search button clicked - resetting and reloading with city filter:', selectedCity)
                   setClinicRMTs({})
                   setLoadedClinicIndexes([])
                   setLoadingClinicIds(new Set())

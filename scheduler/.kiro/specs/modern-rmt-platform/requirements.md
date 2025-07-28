@@ -139,3 +139,18 @@ The upgraded interface will transform the current basic HTML/CSS layout into a m
 3. WHEN viewing statistics THEN numbers and metrics SHALL be presented with clear labels and context
 4. WHEN data sources have issues THEN error states SHALL be communicated clearly with suggested actions
 5. WHEN viewing large amounts of data THEN pagination or progressive loading SHALL be implemented for performance
+
+### Requirement 11: City-Based Clinic Organization and Location Filtering
+
+**User Story:** As a user searching for RMT availability, I want clinics organized by city with location-based filtering, so that I can easily find therapists in my preferred geographic area as the platform expands to multiple cities.
+
+#### Acceptance Criteria
+
+1. WHEN the clinic configuration is loaded THEN clinics SHALL be organized under city categories with Stouffville as the initial city and support for future cities like Markham and Richmond Hill
+2. WHEN viewing the left sidebar THEN clinics SHALL be grouped and displayed under their respective city headers with expandable sections
+3. WHEN the search interface loads THEN the location text input SHALL be replaced with a city dropdown selector populated from available cities; with the default being "All Cities"
+4. WHEN a city is selected from the dropdown THEN search results SHALL be filtered to show only RMTs from clinics in that city
+5. WHEN "All Cities" is selected THEN search results SHALL include RMTs from all enabled clinics regardless of city
+6. WHEN cities are displayed THEN each city section SHALL show the number of available clinics and be visually distinguished
+7. WHEN the configuration is restructured THEN it SHALL maintain backward compatibility with existing clinic data and API endpoints
+8. WHEN new cities are added to the configuration THEN they SHALL appear in the interface without requiring code deployment

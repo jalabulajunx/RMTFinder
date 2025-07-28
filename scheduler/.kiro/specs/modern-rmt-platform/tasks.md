@@ -32,6 +32,17 @@
   - Add results count display showing current page range and total results
   - _Requirements: 3B.1, 3B.2, 3B.3, 3B.4, 3B.5, 3B.6_
 
+- [x] 2C. Implement city-based clinic organization and location filtering
+  - Update clinic-config.json structure to organize clinics by city with Stouffville as initial city
+  - Create configuration migration service to handle transition from flat to city-based structure
+  - Implement city management service for loading and managing city-based clinic data
+  - Replace location text input with city dropdown selector populated from configuration
+  - Update left sidebar to display clinics grouped under expandable city sections
+  - Add city filtering logic to search results to show only RMTs from selected city
+  - Implement "All Cities" option to show results from all enabled cities
+  - Create backward compatibility layer to ensure existing API endpoints continue working
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8_
+
 - [ ] 3. Create CMTO integration service and verification system
   - Build Python service for CMTO API integration and data parsing
   - Implement RMT verification status checking and caching

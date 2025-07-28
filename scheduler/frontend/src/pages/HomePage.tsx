@@ -1,31 +1,9 @@
-import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Button from '../components/UI/Button'
 import Card from '../components/UI/Card'
 
 
 const HomePage: React.FC = () => {
-  const [testData, setTestData] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const testAPI = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/organizations')
-      const data = await response.json()
-      setTestData(data)
-    } catch (error) {
-      console.error('API test failed:', error)
-      setTestData({ error: 'API test failed' })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    testAPI()
-  }, [])
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -49,35 +27,6 @@ const HomePage: React.FC = () => {
             </Button>
           </div>
         </div>
-
-        {/* API Test Section */}
-        <Card className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">System Status</h2>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="primary" 
-                onClick={testAPI}
-                loading={isLoading}
-                disabled={isLoading}
-              >
-                Test API Connection
-              </Button>
-              <span className="text-sm text-gray-600">
-                {isLoading ? 'Testing...' : 'Click to test API connection'}
-              </span>
-            </div>
-            
-            {testData && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-900 mb-2">API Response:</h3>
-                <pre className="text-sm text-gray-700 overflow-auto">
-                  {JSON.stringify(testData, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </Card>
 
         {/* Features Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
